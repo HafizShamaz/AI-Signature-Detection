@@ -1,0 +1,68 @@
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Environment and credentials
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+.envs/
+
+# Conda
+conda-meta/
+
+# Uploaded images and temporary files
+uploads/
+temp/
+tmp/
+*.log
+
+# ML model artifacts
+models/
+checkpoints/
+runs/
+outputs/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+
+# Experiment tracking data
+mlruns/
+mlartifacts/
+
+# IDE and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+
+
+# Docker local overrides
+docker-compose.override.yml
+compose.override.yml
+
+# Docker environment and secrets
+.env
+.env.*
+!.env.example
+*.env
+
+# Docker temporary files
+*.log
+
+# Local container data (if stored in project folders)
+redis_data/
+postgres_data/
+docker-data/
