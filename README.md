@@ -2,7 +2,7 @@
 
 An end-to-end AI-powered document signature detection system built using **YOLO11s (You Only Look Once)** to automatically identify, locate, and analyze handwritten signatures in digital documents.
 
-The system supports multiple document formats, including PDF, PNG, JPG, JPEG, TIFF, BMP, TXT, and DOCX, and uses computer vision to detect signatures within document images. It provides the total number of detected signatures along with individual confidence scores and bounding-box locations, enabling efficient and accurate document verification workflows.
+The system supports multiple document formats, including PNG, JPG, JPEG, TIFF, BMP, and TXT and uses computer vision to detect signatures within document images. It provides the total number of detected signatures along with individual confidence scores and bounding-box locations, enabling efficient and accurate document verification workflows.
 
 The project incorporates a complete machine learning workflow, including synthetic dataset generation, strict dataset preprocessing, YOLO-format annotation handling, model training, evaluation, and deployment.
 
