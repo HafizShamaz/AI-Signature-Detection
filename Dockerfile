@@ -12,7 +12,15 @@ COPY shared/ ./shared/
 COPY worker/ ./worker/
 COPY detection/ ./detection/
 
-RUN mkdir -p /app/uploads
+# Create a non-root Linux user
+RUN groupadd -g 10001 appgroup && \
+    useradd -u 10001 -g appgroup -m appuser && \
+    mkdir -p /app/uploads && \
+    chown -R appuser:appgroup /app/uploads
+
+# Run the application as this user
+USER appuser
+
 
 EXPOSE 8000
 

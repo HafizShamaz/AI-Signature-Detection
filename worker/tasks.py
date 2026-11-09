@@ -5,8 +5,35 @@ import psycopg
 from shared.celery_app import celery_app
 from shared.database import get_connection, get_job, update_job
 
+import logfire
+from celery.signals import worker_process_init
+
 PROJECT_DIR = Path(__file__).resolve().parents[1]
 UPLOAD_DIR = PROJECT_DIR / "uploads"
+
+
+
+
+@worker_process_init.connect(weak=False)
+def setup_worker_logfire(**kwargs):
+
+    logfire.configure(
+        service_name="signature-worker",
+        send_to_logfire="if-token-present",
+        console=False,
+        scrubbing=logfire.ScrubbingOptions(
+            extra_patterns=[
+                "args",
+                "kwargs",
+                "filename",
+                "storage_key",
+                "error_message",
+                "signature"
+            ]
+        )
+    )
+
+    logfire.instrument_celery()
 
 
 def save_failure_or_queue(job_id, error):
@@ -126,3 +153,20 @@ def save_failed_status(self, job_id, error_message):
             exc=error,
             countdown=30
         )
+
+
+
+@celery_app.task(name="test_parallel")
+def test_parallel(seconds=10):
+    import time
+    import socket
+
+    worker = socket.gethostname()
+
+    print(f"START: {worker}", flush=True)
+
+    time.sleep(seconds)
+
+    print(f"FINISH: {worker}", flush=True)
+
+    return "Completed"

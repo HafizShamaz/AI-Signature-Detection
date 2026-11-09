@@ -37,6 +37,7 @@ services:
     environment:
       DATABASE_URL: postgresql://signature:${POSTGRES_PASSWORD}@postgres:5432/signature_db
       REDIS_URL: redis://redis:6379/0
+      LOGFIRE_TOKEN: ${LOGFIRE_TOKEN}
     volumes:
       - uploads_data:/app/uploads
     depends_on:
@@ -60,6 +61,7 @@ services:
     environment:
       DATABASE_URL: postgresql://signature:${POSTGRES_PASSWORD}@postgres:5432/signature_db
       REDIS_URL: redis://redis:6379/0
+      LOGFIRE_TOKEN: ${LOGFIRE_TOKEN}
     volumes:
       - uploads_data:/app/uploads
     depends_on:

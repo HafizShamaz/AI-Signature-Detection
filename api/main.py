@@ -5,8 +5,35 @@ from pathlib import Path
 import uuid
 from PIL import Image
 import shutil
+import logfire
 
 app = FastAPI(title="Signature Detection API")
+
+# Configure Logfire for FastAPI
+logfire.configure(
+    service_name="signature-api",
+    send_to_logfire="if-token-present",
+    console=False,
+    scrubbing=logfire.ScrubbingOptions(
+        extra_patterns=[
+            "args",
+            "kwargs",
+            "filename",
+            "storage_key",
+            "error_message",
+            "signature"
+        ]
+    )
+)
+
+# Monitor HTTP requests
+logfire.instrument_fastapi(
+    app,
+    request_attributes_mapper=lambda request, attributes: {}
+)
+
+# Trace tasks submitted to Celery
+logfire.instrument_celery()
 
 
 UPLOAD_DIR= Path("uploads")
