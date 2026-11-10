@@ -121,8 +121,9 @@ def detect_document(self, job_id, object_key, model_version):
             from detection.inference import detect_signatures
 
             detections = detect_signatures(
-                str(image_path)
-            )
+                            str(image_path),
+                            model_version=model_version
+                        )
 
         # Temporary directory is automatically deleted.
 

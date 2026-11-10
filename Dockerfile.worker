@@ -1,0 +1,41 @@
+
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV OMP_NUM_THREADS=1
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libgomp1 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Existing backend dependencies
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# CPU versions of PyTorch and TorchVision
+RUN pip install --no-cache-dir \
+    torch==2.10.0 \
+    torchvision==0.25.0 \
+    --index-url https://download.pytorch.org/whl/cpu
+
+# Application modules
+COPY shared/ ./shared/
+COPY detection/ ./detection/
+COPY worker/ ./worker/
+
+# Non-root user
+RUN groupadd -g 10001 appgroup && \
+    useradd -u 10001 -g appgroup -m appuser && \
+    mkdir -p /app/uploads && \
+    chown -R appuser:appgroup /app/uploads
+
+USER appuser
+
+CMD ["python", "-m", "celery", \
+     "-A", "shared.celery_app:celery_app", \
+     "worker", "--loglevel=info", \
+     "--concurrency=1"]

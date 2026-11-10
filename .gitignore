@@ -66,3 +66,15 @@ compose.override.yml
 redis_data/
 postgres_data/
 docker-data/
+
+
+.env
+.env.*
+!.env.example
+
+model_artifacts/
+*.pt
+*.pth
+*.onnx
+uploads/
+__pycache__/

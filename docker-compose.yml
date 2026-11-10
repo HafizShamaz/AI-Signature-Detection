@@ -52,7 +52,9 @@ services:
         condition: service_healthy
 
   worker:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     command:
       - python
@@ -72,6 +74,10 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?Required}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?Required}
       STORAGE_BUCKET: ${STORAGE_BUCKET:?Required}
+      DETECTION_MODEL_VERSION: ${DETECTION_MODEL_VERSION:-v1}
+      DETECTION_MODEL_SHA256: ${DETECTION_MODEL_SHA256:?Required}
+      SIGNATURE_CONFIDENCE_THRESHOLD: ${SIGNATURE_CONFIDENCE_THRESHOLD:-0.50}
+      OMP_NUM_THREADS: "1"
     volumes:
       - uploads_data:/app/uploads
     depends_on:
