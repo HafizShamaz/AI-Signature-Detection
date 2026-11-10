@@ -1,0 +1,33 @@
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Model checkpoints
+*.pt
+*.pth
+*.onnx
+
+# Datasets and training data
+merged_signature_dataset/
+datasets/
+data/
+
+# Local databases and uploaded files
+*.sqlite3
+*.db
+uploads/
+storage/
+
+# Logs and temporary files
+*.log
+*.tmp
+.DS_Store

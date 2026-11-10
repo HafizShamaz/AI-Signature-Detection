@@ -1,0 +1,33 @@
+{
+    "model": "Faster R-CNN MobileNetV3 Large FPN",
+    "checkpoint": "C:\\Users\\HP ZBOOK\\Desktop\\signature-ai-project\\models\\signature_detector.pt",
+    "dataset": "C:\\Users\\HP ZBOOK\\Desktop\\signature-ai-project\\merged_signature_dataset",
+    "device": "cpu",
+    "test_images": 2718,
+    "ground_truth_signatures": 3472,
+    "confidence_threshold": 0.5,
+    "iou_threshold_for_precision_recall": 0.5,
+    "precision": 0.8973854371661513,
+    "recall": 0.9193548387096774,
+    "f1_score": 0.9082373026034998,
+    "true_positives": 3192,
+    "false_positives": 365,
+    "false_negatives": 280,
+    "mAP_50": 0.9437490795459147,
+    "mAP_50_95": 0.6228399993286585,
+    "average_inference_time_seconds": 0.31937597126561396,
+    "total_inference_time_seconds": 868.0638898999387,
+    "average_inference_fps": 3.1311059377361063,
+    "average_precision_by_iou": {
+        "AP@0.50": 0.9437490795459147,
+        "AP@0.55": 0.9169719239720999,
+        "AP@0.60": 0.8728188209848702,
+        "AP@0.65": 0.8139794562951799,
+        "AP@0.70": 0.74425453182712,
+        "AP@0.75": 0.6661973373331171,
+        "AP@0.80": 0.5607967676766865,
+        "AP@0.85": 0.43089842235031267,
+        "AP@0.90": 0.24794436803414213,
+        "AP@0.95": 0.030789285267141385
+    }
+}

@@ -1,0 +1,42 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      LOCAL_DATA_DIR: /shared/data
+      DATABASE_PATH: /shared/data/jobs.sqlite3
+      STORAGE_BACKEND: local
+      QUEUE_BACKEND: sqlite
+      SIGNATURE_MODEL_PATH: /app/models/signature_detector.pt
+      SIGNATURE_SIMILARITY_MODEL_PATH: /app/models/signature_similarity.pt
+      SIGNATURE_CONFIDENCE_THRESHOLD: "0.50"
+    volumes:
+      - shared-data:/shared/data
+      - ./models:/app/models:ro
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker.Dockerfile
+    env_file:
+      - .env
+    environment:
+      LOCAL_DATA_DIR: /shared/data
+      DATABASE_PATH: /shared/data/jobs.sqlite3
+      STORAGE_BACKEND: local
+      QUEUE_BACKEND: sqlite
+      INFERENCE_BACKEND: torchvision
+      SIGNATURE_MODEL_PATH: /app/models/signature_detector.pt
+      SIGNATURE_CONFIDENCE_THRESHOLD: "0.50"
+    volumes:
+      - shared-data:/shared/data
+      - ./models:/app/models:ro
+    restart: unless-stopped
+
+volumes:
+  shared-data:

@@ -1,0 +1,9 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+type: command
+display_name: signature-model-training
+experiment_name: signature-detection
+code: ../training
+command: python train.py
+environment: azureml:signature-training-env:1
+compute: azureml:signature-gpu
+description: Template; customize environment, compute and dataset inputs for your workspace.
