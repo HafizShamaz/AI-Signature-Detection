@@ -1,22 +1,34 @@
 
 from pathlib import Path
+from tempfile import TemporaryDirectory
+
 import psycopg
-
-from shared.celery_app import celery_app
-from shared.database import get_connection, get_job, update_job
-
 import logfire
+
 from celery.signals import worker_process_init
 
-PROJECT_DIR = Path(__file__).resolve().parents[1]
-UPLOAD_DIR = PROJECT_DIR / "uploads"
+from botocore.exceptions import (
+    EndpointConnectionError,
+    ConnectTimeoutError,
+    ReadTimeoutError,
+    ConnectionClosedError,
+)
+
+from shared.celery_app import celery_app
+
+from shared.database import (
+    get_connection,
+    get_job,
+    update_job,
+)
+
+from shared.storage import download_image
 
 
-
+# ---------------- LOGFIRE MONITORING ----------------
 
 @worker_process_init.connect(weak=False)
 def setup_worker_logfire(**kwargs):
-
     logfire.configure(
         service_name="signature-worker",
         send_to_logfire="if-token-present",
@@ -28,72 +40,111 @@ def setup_worker_logfire(**kwargs):
                 "filename",
                 "storage_key",
                 "error_message",
-                "signature"
+                "signature",
             ]
-        )
+        ),
     )
 
     logfire.instrument_celery()
 
 
+# ---------------- FAILURE RECOVERY ----------------
+
 def save_failure_or_queue(job_id, error):
-   
     try:
         update_job(
             job_id,
             "failed",
-            error_message=str(error)
+            error_message=str(error),
         )
 
     except psycopg.OperationalError:
+        # PostgreSQL unavailable:
+        # queue the failure-status update for later.
         celery_app.send_task(
             "save_failed_status",
-            args=[job_id, str(error)]
+            args=[job_id, str(error)],
         )
 
+
+# ---------------- DETECTION WORKER ----------------
 
 @celery_app.task(
     bind=True,
     name="detect_document",
-    max_retries=3
+    max_retries=3,
 )
-def detect_document(self, job_id, filename, model_version):
+def detect_document(self, job_id, object_key, model_version):
 
     try:
+        # 1. Retrieve job from Neon PostgreSQL
         job = get_job(job_id)
 
         if job is None:
             raise ValueError("Job not found in PostgreSQL")
 
+        # Avoid repeating work for a completed job.
         if job["status"] == "done":
             return job["detections"]
 
+        # 2. Update job status
         update_job(job_id, "processing")
 
-        image_path = UPLOAD_DIR / filename
+        # 3. Check cloud object key
+        if not object_key.startswith("documents/"):
+            raise ValueError("Invalid document storage key")
 
-        if not image_path.is_file():
-            raise FileNotFoundError(
-                "Uploaded image not found"
+        extension = Path(object_key).suffix.lower()
+
+        if extension not in (".jpg", ".jpeg", ".png"):
+            raise ValueError("Unsupported image extension")
+
+        # 4. Create temporary directory
+        with TemporaryDirectory() as temp_dir:
+
+            image_path = (
+                Path(temp_dir) / f"{job_id}{extension}"
             )
 
-        from detection.inference import detect_signatures
+            # 5. Download image from Neon Object Storage
+            download_image(
+                object_key,
+                image_path,
+            )
 
-        detections = detect_signatures(str(image_path))
+            if not image_path.is_file():
+                raise FileNotFoundError(
+                    "Image download failed"
+                )
 
+            # 6. Run signature detection
+            from detection.inference import detect_signatures
+
+            detections = detect_signatures(
+                str(image_path)
+            )
+
+        # Temporary directory is automatically deleted.
+
+        # 7. Save detection results to Neon PostgreSQL
         update_job(
             job_id,
             "done",
-            detections=detections
+            detections=detections,
         )
 
         return detections
 
-    # Temporary errors: retry up to 3 times
+    # ---------------- RETRYABLE ERRORS ----------------
+
     except (
         psycopg.OperationalError,
         ConnectionError,
-        TimeoutError
+        TimeoutError,
+        EndpointConnectionError,
+        ConnectTimeoutError,
+        ReadTimeoutError,
+        ConnectionClosedError,
     ) as error:
 
         if self.request.retries >= self.max_retries:
@@ -104,31 +155,34 @@ def detect_document(self, job_id, filename, model_version):
             update_job(
                 job_id,
                 "retrying",
-                error_message=str(error)
+                error_message=str(error),
             )
         except psycopg.Error:
             pass
 
         delay = min(
             10 * (2 ** self.request.retries),
-            60
+            60,
         )
 
         raise self.retry(
             exc=error,
-            countdown=delay
+            countdown=delay,
         )
 
-    # Other errors: fail immediately
+    # ---------------- OTHER ERRORS ----------------
+
     except Exception as error:
         save_failure_or_queue(job_id, error)
         raise
 
 
+# ---------------- DATABASE RECOVERY TASK ----------------
+
 @celery_app.task(
     bind=True,
     name="save_failed_status",
-    max_retries=None
+    max_retries=None,
 )
 def save_failed_status(self, job_id, error_message):
 
@@ -137,13 +191,14 @@ def save_failed_status(self, job_id, error_message):
             conn.execute(
                 """
                 UPDATE jobs
-                SET status = 'failed',
+                SET
+                    status = 'failed',
                     error_message = %s,
                     updated_at = NOW()
                 WHERE job_id = %s
                   AND status NOT IN ('done', 'failed')
                 """,
-                (error_message, job_id)
+                (error_message, job_id),
             )
 
         return "Failure status update attempted"
@@ -151,22 +206,5 @@ def save_failed_status(self, job_id, error_message):
     except psycopg.OperationalError as error:
         raise self.retry(
             exc=error,
-            countdown=30
+            countdown=30,
         )
-
-
-
-@celery_app.task(name="test_parallel")
-def test_parallel(seconds=10):
-    import time
-    import socket
-
-    worker = socket.gethostname()
-
-    print(f"START: {worker}", flush=True)
-
-    time.sleep(seconds)
-
-    print(f"FINISH: {worker}", flush=True)
-
-    return "Completed"
