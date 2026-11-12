@@ -19,5 +19,7 @@ RUN python -m pip install \
 
 COPY app ./app
 COPY worker ./worker
+COPY similarity ./similarity
+COPY models ./models
 
 CMD ["python", "-m", "worker.main"]

@@ -19,6 +19,7 @@ RUN python -m pip install \
 COPY app ./app
 COPY mlops ./mlops
 COPY similarity ./similarity
+COPY models ./models
 
 EXPOSE 8000
 
